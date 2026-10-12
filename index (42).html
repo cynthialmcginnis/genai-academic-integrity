@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Interactive lecture on GenAI and academic integrity, built around the six fundamental values.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}*,*::before,*::after{box-sizing:border-box}</style>
+<title>Stand Over Your Own Work</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one projected screen. A live 3D "integrity lattice" of six values sits right; the argument reads left; activities float on a glass panel over a dimmed scene. */
+:root {
+  color-scheme: dark;
+  --ink: #0b1020;
+  --ink-2: #121a30;
+  --panel: rgba(17, 25, 46, 0.86);
+  --line: rgba(160, 182, 226, 0.2);
+  --fg: #eaeef7;
+  --muted: #9aa5be;
+  --brass: #e6b35a;
+  --steel: #9fb8e8;
+  --glow: rgba(72, 98, 168, 0.24);
+  --false: #ff7f6e;
+  --true: #74d8a9;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+html, body { height: 100%; }
+body {
+  margin: 0; overflow: hidden; color: var(--fg); font-family: var(--body);
+  background: radial-gradient(1100px 700px at 74% 42%, var(--glow), transparent 70%), var(--ink);
+}
+#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; transition: opacity .9s ease; z-index: 1; }
+#labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+.node-label {
+  position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer;
+  font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--fg); background: rgba(11, 16, 32, .55); border: 1px solid var(--line);
+  border-radius: 999px; padding: 7px 11px; white-space: nowrap; backdrop-filter: blur(4px);
+  transition: border-color .3s, color .3s;
+}
+.node-label:hover, .node-label.on { border-color: var(--brass); color: var(--brass); }
+.node-label.core { cursor: default; color: var(--muted); border-style: dashed; }
+.node-label:focus-visible, .btn:focus-visible, .pip:focus-visible, .sent:focus-visible, .vbtn:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+.topline {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 4; pointer-events: none;
+  display: flex; justify-content: space-between; gap: 16px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) clamp(16px, 4vw, 56px) 0;
+  font: 500 12px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+}
+.topline b { color: var(--brass); font-weight: 500; }
+
+#deck {
+  position: fixed; inset: 0; z-index: 3; pointer-events: none; display: flex; align-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 58px) clamp(16px, 4vw, 56px) calc(env(safe-area-inset-bottom, 0px) + 86px);
+}
+.slide {
+  pointer-events: auto; width: min(600px, 100%); max-height: 100%; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 20px; padding-right: 6px; scrollbar-width: thin;
+}
+.slide.wide {
+  width: min(1080px, 100%); margin-inline: auto; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 14px; padding: clamp(18px, 3vw, 36px); backdrop-filter: blur(12px); gap: 18px;
+}
+.slide.enter { animation: rise .7s cubic-bezier(.2, .7, .2, 1); }
+@keyframes rise { from { opacity: .3; transform: translateY(16px); } }
+
+.eyebrow { margin: 0; font: 500 12px var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--brass); }
+.mega { margin: 0; font-family: var(--display); font-weight: 780; font-size: clamp(3rem, 7.4vw, 6.4rem); line-height: .9; letter-spacing: -.035em; text-wrap: balance; }
+.mega em { font-style: normal; color: var(--brass); }
+h2 { margin: 0; font-family: var(--display); font-weight: 720; font-size: clamp(2rem, 3.9vw, 3.3rem); line-height: 1.02; letter-spacing: -.022em; text-wrap: balance; }
+h3 { margin: 0; font-family: var(--display); font-weight: 650; font-size: 1.25rem; letter-spacing: -.01em; }
+.value-name { font-size: clamp(3.2rem, 7.4vw, 6rem); color: var(--brass); line-height: .9; }
+.claim { margin: 0; font-family: var(--display); font-weight: 600; font-size: clamp(1.35rem, 2.3vw, 1.9rem); line-height: 1.2; text-wrap: balance; }
+p { margin: 0; font-size: clamp(1rem, 1.25vw, 1.17rem); line-height: 1.55; max-width: 62ch; }
+.lede { font-size: clamp(1.1rem, 1.6vw, 1.4rem); color: var(--fg); max-width: 44ch; }
+.muted { color: var(--muted); }
+.hint { font: 400 13px var(--mono); color: var(--muted); letter-spacing: .04em; }
+kbd { font: 500 12px var(--mono); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; color: var(--fg); }
+
+.row { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; border-top: 1px solid var(--line); padding-top: 14px; }
+.tag { font: 500 11px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); padding-top: 4px; }
+.row.ask .tag { color: var(--brass); }
+.row.ask p { font-style: italic; }
+
+.btn {
+  font: 500 14px var(--body); color: var(--fg); background: transparent; border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: border-color .2s, color .2s, background .2s;
+}
+.btn:hover { border-color: var(--brass); color: var(--brass); }
+.btn.solid { background: var(--brass); color: var(--ink); border-color: var(--brass); }
+.btn.solid:hover { color: var(--ink); filter: brightness(1.08); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.compare > div { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--line); padding-top: 12px; }
+.compare .bad { border-top-color: var(--false); }
+.compare .good { border-top-color: var(--true); }
+.compare h3 { font-size: 1.1rem; }
+
+.tally { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tbtn {
+  display: flex; flex-direction: column; gap: 8px; text-align: left; cursor: pointer;
+  background: rgba(255, 255, 255, .03); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+  font: 500 14px var(--body);
+}
+.tbtn:hover { border-color: var(--brass); }
+.tbtn .n { font: 700 2rem var(--display); font-variant-numeric: tabular-nums; }
+.tbtn .bar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.tbtn .bar i { display: block; height: 100%; width: 0; background: var(--brass); transition: width .4s; }
+
+.pull { font-family: var(--display); font-size: clamp(1.15rem, 1.8vw, 1.45rem); line-height: 1.35; font-weight: 500; border-top: 1px solid var(--line); padding-top: 16px; max-width: 46ch; }
+
+.vgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.vbtn {
+  text-align: left; cursor: pointer; color: var(--fg); background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 4px;
+  font: 400 13px/1.4 var(--body);
+}
+.vbtn b { font: 650 1.08rem var(--display); }
+.vbtn span { color: var(--muted); }
+.vbtn:hover { border-color: var(--brass); }
+.vbtn:hover b { color: var(--brass); }
+
+.flow { display: flex; flex-direction: column; gap: 14px; }
+.flow h3 { font: 500 12px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.flow ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; counter-reset: s; }
+.flow li {
+  counter-increment: s; display: flex; gap: 8px; align-items: baseline; padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--line); font-size: .95rem; animation: step 7s infinite;
+}
+.flow li::before { content: counter(s); font: 500 12px var(--mono); color: var(--brass); }
+.flow li:nth-child(2) { animation-delay: 1.2s; } .flow li:nth-child(3) { animation-delay: 2.4s; }
+.flow li:nth-child(4) { animation-delay: 3.6s; } .flow li:nth-child(5) { animation-delay: 4.8s; }
+@keyframes step { 0%, 14% { border-color: var(--brass); background: rgba(230, 179, 90, .1); } 22%, 100% { border-color: var(--line); background: transparent; } }
+
+.themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.themes > div { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--brass); padding-top: 12px; }
+.themes p { font-size: 1rem; }
+.themes .mon { font: 400 13px/1.5 var(--mono); color: var(--muted); }
+
+/* Hallucination activity */
+.twocol { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 26px; align-items: start; }
+.chat { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.chat .q { padding: 12px 16px; font: 400 13px/1.5 var(--mono); color: var(--muted); border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, .025); }
+.chat .a { padding: 16px; font-size: 1.08rem; line-height: 1.85; }
+.sent {
+  font: inherit; color: inherit; background: transparent; border: 0; padding: 1px 2px; margin: 0; cursor: pointer; text-align: left;
+  border-bottom: 1px dashed rgba(160, 182, 226, .35); border-radius: 3px; display: inline; line-height: inherit;
+}
+.sent:hover { background: rgba(255, 255, 255, .06); }
+.sent.flag { background: rgba(255, 127, 110, .16); border-bottom-color: var(--false); }
+.revealed .sent.isfalse { background: rgba(255, 127, 110, .22); border-bottom: 2px solid var(--false); }
+.revealed .sent.istrue { background: rgba(116, 216, 169, .1); border-bottom: 2px solid var(--true); }
+.revealed .sent.isfalse.flag::after { content: " caught"; font: 500 11px var(--mono); color: var(--false); }
+.revealed .sent.istrue.flag::after { content: " false alarm"; font: 500 11px var(--mono); color: var(--muted); }
+.revealed .sent.isfalse:not(.flag)::after { content: " missed"; font: 500 11px var(--mono); color: var(--false); }
+.score { font: 600 1.4rem var(--display); }
+.whys { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.whys li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; font-size: .95rem; line-height: 1.45; }
+.whys li::before { content: "✓"; color: var(--true); font-family: var(--mono); }
+.whys li.f::before { content: "✗"; color: var(--false); }
+
+/* Scenarios */
+.policy { font: 400 13px var(--mono); color: var(--muted); }
+.scards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.scard { display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: rgba(255, 255, 255, .02); }
+.scard p { font-size: .97rem; line-height: 1.45; flex: 1; }
+.choices { display: flex; flex-direction: column; gap: 6px; }
+.choice { font: 500 13px var(--body); text-align: left; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+.choice:hover { border-color: var(--steel); }
+.choice.right { border-color: var(--true); background: rgba(116, 216, 169, .14); }
+.choice.wrong { border-color: var(--false); background: rgba(255, 127, 110, .12); }
+.verdict { font-size: .9rem; line-height: 1.45; color: var(--fg); border-top: 1px solid var(--line); padding-top: 8px; }
+.verdict b { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--brass); display: block; margin-bottom: 4px; }
+
+/* Builder */
+.builder { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 26px; align-items: start; }
+.fields { display: flex; flex-direction: column; gap: 12px; }
+.fields label { display: flex; flex-direction: column; gap: 6px; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.fields input, .fields textarea {
+  font: 400 15px/1.45 var(--body); color: var(--fg); background: rgba(11, 16, 32, .6); border: 1px solid var(--line);
+  border-radius: 8px; padding: 9px 11px; letter-spacing: 0; text-transform: none; resize: vertical;
+}
+.fields input:focus, .fields textarea:focus { outline: none; border-color: var(--brass); }
+.statement { font-family: var(--display); font-weight: 450; font-size: 1.15rem; line-height: 1.55; border-left: 2px solid var(--brass); padding: 4px 0 4px 18px; }
+.statement mark { background: transparent; color: var(--brass); }
+.example-note { font: 400 12px var(--mono); color: var(--muted); }
+
+/* Notes + bar */
+#notes {
+  position: fixed; right: clamp(16px, 3vw, 32px); bottom: calc(env(safe-area-inset-bottom, 0px) + 78px); z-index: 7;
+  width: min(420px, calc(100% - 32px)); background: var(--ink-2); border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px 18px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
+}
+#notes h4 { margin: 0 0 8px; font: 500 11px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--brass); }
+#notes p { font-size: .95rem; line-height: 1.5; color: var(--fg); }
+
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; align-items: center; gap: 10px;
+  padding: 14px clamp(16px, 3vw, 32px) calc(env(safe-area-inset-bottom, 0px) + 14px);
+  background: linear-gradient(to top, var(--ink) 40%, transparent);
+}
+.pips { flex: 1; display: flex; gap: 4px; min-width: 0; }
+.pip { flex: 1; max-width: 46px; height: 22px; padding: 0; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; }
+.pip i { display: block; width: 100%; height: 3px; border-radius: 2px; background: var(--line); transition: background .3s; }
+.pip.done i { background: rgba(230, 179, 90, .45); }
+.pip.on i { background: var(--brass); height: 5px; }
+.count { font: 500 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; min-width: 52px; text-align: center; }
+.bar .btn { padding: 8px 12px; font-size: 13px; }
+#timer { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+#timer.run { border-color: var(--brass); color: var(--brass); }
+#timer.done { border-color: var(--false); color: var(--false); animation: blink 1s 4; }
+@keyframes blink { 50% { opacity: .3; } }
+
+@media (max-width: 900px) {
+  .twocol, .builder { grid-template-columns: minmax(0, 1fr); }
+  .scards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .themes { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+}
+@media (max-width: 640px) {
+  #deck { align-items: flex-start; }
+  .slide { width: 100%; }
+  .compare, .tally, .scards { grid-template-columns: minmax(0, 1fr); }
+  .vgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .pips, .hide-sm { display: none; }
+  .bar { justify-content: space-between; }
+  .topline span:last-child { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide.enter, .flow li, #timer.done { animation: none; }
+}
+</style>
+
+</head>
+<body>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="labels"></div>
+
+<header class="topline">
+  <span><b>GenAI</b> &amp; Academic Integrity</span>
+  <span id="sectionName">Opening</span>
+</header>
+
+<main id="deck">
+
+  <section class="slide" data-scene="title" data-section="Opening"
+    data-notes="Open cold. Let the model spin for a few seconds before you speak. Frame the whole session: GenAI is neither banned nor free-for-all here. The six nodes are the values; the centre is their own work.">
+    <p class="eyebrow">Lecture · Academic integrity in a GenAI world</p>
+    <h1 class="mega">Stand over<br>your <em>own</em> work.</h1>
+    <p class="lede">GenAI can bypass your learning or deepen it. Six values decide which one happens.</p>
+    <p class="hint"><kbd>←</kbd> <kbd>→</kbd> move &nbsp; <kbd>N</kbd> notes &nbsp; <kbd>F</kbd> full screen &nbsp; <kbd>T</kbd> 2-minute timer</p>
+  </section>
+
+  <section class="slide" data-scene="ring" data-section="The tension"
+    data-notes="Take the count honestly and without judgment. Click a button once per raised hand, or enter totals. The point: most of the room already uses these tools, so the question is how, not whether.">
+    <p class="eyebrow">The tension</p>
+    <h2>Threat or tool? Both. Your use decides.</h2>
+    <div class="compare">
+      <div class="bad"><h3>Bypasses learning</h3><p class="muted">Unauthorised content generation. The tool produces the thing you were supposed to learn how to produce.</p></div>
+      <div class="good"><h3>Enhances learning</h3><p class="muted">The tool helps you think, practise and check. The learning stays in your head.</p></div>
+    </div>
+    <p>Quick count. Have you used GenAI for coursework this term?</p>
+    <div class="tally" id="tally">
+      <button class="tbtn" type="button" data-k="0"><span>Never</span><span class="n">0</span><span class="bar"><i></i></span></button>
+      <button class="tbtn" type="button" data-k="1"><span>A few times</span><span class="n">0</span><span class="bar"><i></i></span></button>
+      <button class="tbtn" type="button" data-k="2"><span>Regularly</span><span class="n">0</span><span class="bar"><i></i></span></button>
+    </div>
+    <div class="actions"><button class="btn" type="button" id="tallyReset">Reset count</button></div>
+  </section>
+
+  <section class="slide" data-scene="ring" data-section="The recommendation"
+    data-notes="ENAI is the European Network for Academic Integrity. Stress the second half: students should get practice, not just rules. That is what today is.">
+    <p class="eyebrow">What the field recommends</p>
+    <h2>Teach GenAI and integrity together.</h2>
+    <p>The European Network for Academic Integrity says staff and students need guidance on what these tools do well and where they fail. Students also need real practice using them ethically.</p>
+    <p class="pull">Meet GenAI inside a lesson on integrity, and you link the tool with good practice. Meet it at 2 a.m. before a deadline, and you link it with shortcuts.</p>
+  </section>
+
+  <section class="slide" data-scene="overview" data-section="Six values"
+    data-notes="These are the ICAI Fundamental Values. You can click a node in the model or a card here to jump to any value. Ask: which one do you think GenAI tests hardest?">
+    <p class="eyebrow">The framework</p>
+    <h2>Six values hold it up.</h2>
+    <p>The International Center for Academic Integrity names six fundamental values. Each one maps straight onto how you use GenAI. Pick one.</p>
+    <div class="vgrid" id="vgrid"></div>
+  </section>
+
+  <section class="slide" data-scene="focus-0" data-section="Honesty"
+    data-notes="Push on the question. Students often think a little help does not count. The standard is simple: if GenAI touched it, say so.">
+    <p class="eyebrow">Value 1 of 6</p>
+    <h2 class="value-name">Honesty</h2>
+    <p class="claim">Say what is yours and what is not.</p>
+    <p>Any use of GenAI gets acknowledged and made transparent. Small help still counts as help.</p>
+    <div class="row"><span class="tag">Example</span><p>GenAI drafted your outline. You wrote every paragraph. Your submission says both things.</p></div>
+    <div class="row ask"><span class="tag">Ask the room</span><p>Where is the line between getting help and giving away authorship?</p></div>
+  </section>
+
+  <section class="slide" data-scene="focus-1" data-section="Trust"
+    data-notes="The flickering node is deliberate: GenAI output looks solid and is not. Tease the hallucination activity coming later.">
+    <p class="eyebrow">Value 2 of 6</p>
+    <h2 class="value-name">Trust</h2>
+    <p class="claim">GenAI is not a source. It hallucinates.</p>
+    <p>It produces accurate, useful output much of the time. You still cannot assume any given answer is reliable. Analyse it before you use it.</p>
+    <div class="row"><span class="tag">Example</span><p>Ask a chatbot for five references on your topic. Some will look perfect and not exist. Check each one in the library database.</p></div>
+    <div class="row ask"><span class="tag">Ask the room</span><p>How would you verify a chatbot's claim in under two minutes?</p></div>
+  </section>
+
+  <section class="slide" data-scene="focus-2" data-section="Fairness"
+    data-notes="Make the point that different policies in different courses are not unfair. Unclear or unevenly enforced policies are.">
+    <p class="eyebrow">Value 3 of 6</p>
+    <h2 class="value-name">Fairness</h2>
+    <p class="claim">Clear rules, applied the same way to everyone.</p>
+    <p>Guidelines on when GenAI can and cannot be used must be available and applied consistently. That holds for students and staff, in every class, programme and discipline.</p>
+    <div class="row"><span class="tag">Example</span><p>Course A bans GenAI on exams. Course B requires it in a lab. Both are fair, as long as each states the rule up front.</p></div>
+    <div class="row ask"><span class="tag">Ask the room</span><p>What happens to fairness when a policy is vague?</p></div>
+  </section>
+
+  <section class="slide" data-scene="focus-3" data-section="Respect"
+    data-notes="This is the enhance versus bypass test. Have students name one assignment from this course that would lose its point if a chatbot did it.">
+    <p class="eyebrow">Value 4 of 6</p>
+    <h2 class="value-name">Respect</h2>
+    <p class="claim">Use GenAI to strengthen learning. Never to skip it.</p>
+    <p>Respect the learning process, your own potential, and the people around you. Take pride in your own contribution, and be open about the tool's.</p>
+    <div class="row"><span class="tag">Example</span><p>Asking GenAI to quiz you on regression builds the skill. Asking it to do the regression homework skips the skill.</p></div>
+    <div class="row ask"><span class="tag">Ask the room</span><p>Which of your assignments would lose its point if a chatbot did it?</p></div>
+  </section>
+
+  <section class="slide" data-scene="focus-4" data-section="Responsibility"
+    data-notes="Key line: GenAI cannot take responsibility for what it produces. A person always signs the work. Watch the spoke to the centre light up.">
+    <p class="eyebrow">Value 5 of 6</p>
+    <h2 class="value-name">Responsibility</h2>
+    <p class="claim">You own the output. GenAI cannot.</p>
+    <p>This is a real difference between GenAI and human work. A model cannot answer for its errors or bias. You check it for accuracy and bias because your name carries it.</p>
+    <div class="row"><span class="tag">Example</span><p>Your report cites a statistic GenAI invented. The error is yours, the same way a signed report is yours no matter who drafted it.</p></div>
+    <div class="row ask"><span class="tag">Ask the room</span><p>Who is accountable when a GenAI-written answer is wrong?</p></div>
+  </section>
+
+  <section class="slide" data-scene="focus-5" data-section="Courage"
+    data-notes="Courage cuts two ways: the nerve to learn an unfamiliar tool, and the discipline to skip the easy shortcut. Invite a personal story.">
+    <p class="eyebrow">Value 6 of 6</p>
+    <h2 class="value-name">Courage</h2>
+    <p class="claim">The shortcut is easy. Learning takes nerve.</p>
+    <p>It takes courage to learn new tools. It takes more to keep using them ethically when a shortcut would be faster.</p>
+    <div class="row"><span class="tag">Example</span><p>An hour stuck on a proof builds something a pasted answer never will. The struggle is where the skill forms.</p></div>
+    <div class="row ask"><span class="tag">Ask the room</span><p>When did struggling with a problem teach you more than an answer would have?</p></div>
+  </section>
+
+  <section class="slide wide" data-scene="core" data-section="Same rules"
+    data-notes="Model this yourself. Tell the class how GenAI helped build this deck, and point to the acknowledgment builder at the end. Same standard, both sides of the desk.">
+    <p class="eyebrow">One standard for staff and students</p>
+    <h2>Instructors show their work too.</h2>
+    <p>When staff acknowledge their own GenAI use and explain why, students see what acceptable use looks like. The two processes mirror each other.</p>
+    <div class="flow">
+      <h3>Instructor building an assignment</h3>
+      <ol><li>Ask GenAI for possible essay questions</li><li>Review the list</li><li>Select the strongest</li><li>Revise them into the final assignment</li><li>Tell the class how GenAI helped</li></ol>
+    </div>
+    <div class="flow">
+      <h3>Student writing the essay</h3>
+      <ol><li>Brainstorm key points with GenAI</li><li>Research each point yourself</li><li>Write your own argument</li><li>Verify every claim</li><li>Acknowledge the GenAI use</li></ol>
+    </div>
+  </section>
+
+  <section class="slide wide" data-scene="core" data-section="Three habits"
+    data-notes="These three habits come up across the whole framework. Ask the class which one they find hardest to practise.">
+    <p class="eyebrow">What the framework asks of you</p>
+    <h2>Three habits make it work.</h2>
+    <div class="themes">
+      <div><h3>Transparency</h3><p>Say when and how you used GenAI. Staff model it first.</p><p class="mon">Looks like: an acknowledgment statement on every assignment that used it.</p></div>
+      <div><h3>Clear guidelines</h3><p>Rules may differ from course to course. Each course states its own.</p><p class="mon">Looks like: reading the syllabus policy before you open a chatbot.</p></div>
+      <div><h3>Critical thinking</h3><p>Pair every use with analysis. GenAI spreads misinformation and bias when nobody checks.</p><p class="mon">Looks like: treating output as a draft to interrogate, never a verdict.</p></div>
+    </div>
+  </section>
+
+  <section class="slide wide" data-scene="glitch" data-section="Activity: hallucination"
+    data-notes="Read the answer aloud. Students call out sentences they doubt; click to flag them. Then reveal. Three are false. Discuss why the false ones sound so confident.">
+    <p class="eyebrow">Activity · Trust and responsibility</p>
+    <h2>Spot the hallucination.</h2>
+    <div class="twocol" id="halluc">
+      <div class="chat">
+        <div class="q">Prompt: Explain the Central Limit Theorem and cite a source.</div>
+        <div class="a" id="hallucText"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <p class="muted" id="hallucHelp">Click any sentence you would not trust. Then reveal.</p>
+        <div class="actions"><button class="btn solid" type="button" id="hallucReveal">Reveal</button><button class="btn" type="button" id="hallucReset">Reset</button></div>
+        <p class="score" id="hallucScore" hidden></p>
+        <ul class="whys" id="hallucWhys" hidden></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide wide" data-scene="dim" data-section="Activity: use or misuse"
+    data-notes="Take a show of hands for each card, click the majority answer, then discuss the verdict. Remind them the syllabus always wins.">
+    <p class="eyebrow">Activity · Apply the values</p>
+    <h2>Use or misuse?</h2>
+    <p class="policy">Answers assume a course that allows GenAI with acknowledgment. Your syllabus decides.</p>
+    <div class="scards" id="scards"></div>
+    <div class="actions"><button class="btn" type="button" id="scReset">Reset all</button></div>
+  </section>
+
+  <section class="slide wide" data-scene="dim" data-section="Acknowledge it"
+    data-notes="The prefilled text is an example of an instructor acknowledging GenAI help with this deck. Edit it live, or clear it and build one with a student volunteer.">
+    <p class="eyebrow">Honesty in practice</p>
+    <h2>Acknowledge it. Every time.</h2>
+    <div class="builder">
+      <form class="fields" id="ackForm">
+        <label for="ackSystem">GenAI system and link<input id="ackSystem" type="text" value="Claude (https://claude.ai)"></label>
+        <label for="ackUse">Specific use<input id="ackUse" type="text" value="design and code the interactive slides for this lecture"></label>
+        <label for="ackPrompts">Prompts used<textarea id="ackPrompts" rows="3">"Turn this guidance on GenAI and academic integrity into an interactive lecture using HTML, JavaScript and Three.js."</textarea></label>
+        <label for="ackOutput">How the output was used<textarea id="ackOutput" rows="2">build this slide deck, which I reviewed and edited for accuracy before presenting</textarea></label>
+      </form>
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <p class="example-note">Example statement, prefilled. Replace it with your own.</p>
+        <div class="statement" id="ackOut"></div>
+        <div class="actions"><button class="btn solid" type="button" id="ackCopy">Copy statement</button><button class="btn" type="button" id="ackClear">Clear fields</button><span class="hint" id="ackMsg" aria-live="polite"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-scene="title" data-section="Close"
+    data-notes="Exit ticket: one sentence, handed in or posted. Use the timer. Source: University College Cork guidance on GenAI and academic integrity; ICAI Fundamental Values.">
+    <p class="eyebrow">Close</p>
+    <h1 class="mega">Your name.<br>Your <em>work</em>.</h1>
+    <div class="row"><span class="tag">Remember</span><p>Acknowledge every use. Verify every claim. Use GenAI to learn more, never to learn less.</p></div>
+    <div class="row ask"><span class="tag">Exit ticket</span><p>In one sentence: how will you use GenAI in this course, and how will you show it?</p></div>
+    <p class="hint">Adapted from <i>Toolkit for the Ethical Use of Generative Artificial Intelligence in Learning &amp; Teaching</i> (UCC Skills Centre and the National Forum for the Enhancement of Teaching and Learning in Higher Education, October 2023), licensed <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener" style="color:var(--brass)">CC BY-NC-SA 4.0</a>. Values from the International Center for Academic Integrity. This adaptation by Cynthia McGinnis is shared under the same license. Slides designed and coded with Claude (claude.ai).</p>
+  </section>
+</main>
+
+<aside id="notes" hidden><h4>Speaker notes</h4><p id="notesText"></p></aside>
+
+<nav class="bar" aria-label="Slide navigation">
+  <button class="btn" type="button" id="prev" aria-label="Previous slide">←</button>
+  <div class="pips" id="pips"></div>
+  <span class="count" id="count">1 / 1</span>
+  <button class="btn" type="button" id="timer" title="Two-minute discussion timer (T)">2:00</button>
+  <button class="btn hide-sm" type="button" id="notesBtn" title="Speaker notes (N)">Notes</button>
+  <button class="btn hide-sm" type="button" id="fsBtn" title="Full screen (F)">Full screen</button>
+  <button class="btn solid" type="button" id="next" aria-label="Next slide">→</button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var VALUES = [
+    { name: "Honesty", line: "Say what is yours." },
+    { name: "Trust", line: "Output is not a source." },
+    { name: "Fairness", line: "Clear rules for all." },
+    { name: "Respect", line: "Enhance, never bypass." },
+    { name: "Responsibility", line: "You own the output." },
+    { name: "Courage", line: "Skip the shortcut." }
+  ];
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var idx = 0;
+  var valueSlide = {};
+  slides.forEach(function (s, i) {
+    var m = /^focus-(\d)$/.exec(s.dataset.scene);
+    if (m) valueSlide[+m[1]] = i;
+    if (i) s.hidden = true;
+  });
+
+  /* ---------- 3D scene ---------- */
+  var S = { ok: false };
+  var target = { tilt: 1, spin: 1, focus: -1, labels: true, dim: 1, core: 0, glitch: 0, offset: 1 };
+  var cur = { tilt: 1, offset: 2, phi: 0, core: 0 };
+  var canvas = document.getElementById("gl");
+  var labelsEl = document.getElementById("labels");
+  var mouse = { x: 0, y: 0 };
+
+  function glowTex() {
+    var c = document.createElement("canvas"); c.width = c.height = 128;
+    var g = c.getContext("2d");
+    var r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.25, "rgba(255,255,255,.45)"); r.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = r; g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  }
+
+  function initScene() {
+    if (!window.THREE) { canvas.style.display = "none"; return; }
+    try {
+      var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      var scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x0b1020, 0.04);
+      var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+      camera.position.set(0, 0.6, 10);
+      var outer = new THREE.Group(), spinner = new THREE.Group();
+      outer.add(spinner); scene.add(outer);
+      var tex = glowTex();
+      var STEEL = new THREE.Color(0x9fb8e8), BRASS = new THREE.Color(0xe6b35a), DIM = new THREE.Color(0x46557a);
+      var R = 3.2;
+
+      var coreGeo = new THREE.IcosahedronGeometry(1, 1);
+      var coreWire = new THREE.LineSegments(new THREE.WireframeGeometry(coreGeo), new THREE.LineBasicMaterial({ color: 0xe6b35a, transparent: true, opacity: .5 }));
+      var coreInner = new THREE.Mesh(new THREE.IcosahedronGeometry(.55, 0), new THREE.MeshBasicMaterial({ color: 0xe6b35a, transparent: true, opacity: .28 }));
+      var coreGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: 0xe6b35a, transparent: true, opacity: .35, blending: THREE.AdditiveBlending, depthWrite: false }));
+      coreGlow.scale.set(4, 4, 1);
+      var core = new THREE.Group(); core.add(coreWire, coreInner, coreGlow); spinner.add(core);
+
+      var nodes = [], spokes = [];
+      var hexPts = [];
+      for (var i = 0; i < 6; i++) {
+        var th = i * Math.PI / 3;
+        var p = new THREE.Vector3(R * Math.cos(th), 0, R * Math.sin(th));
+        hexPts.push(p.clone());
+        var n = new THREE.Group(); n.position.copy(p);
+        var mesh = new THREE.Mesh(new THREE.OctahedronGeometry(.24, 0), new THREE.MeshBasicMaterial({ color: STEEL.clone(), transparent: true, opacity: 1 }));
+        var glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: STEEL.clone(), transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false }));
+        glow.scale.set(1.6, 1.6, 1);
+        n.add(mesh, glow); spinner.add(n);
+        nodes.push({ g: n, mesh: mesh, glow: glow, base: p.clone(), th: th, s: 1 });
+        var sg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), p]);
+        var sp = new THREE.Line(sg, new THREE.LineBasicMaterial({ color: 0x9fb8e8, transparent: true, opacity: .18 }));
+        spinner.add(sp); spokes.push(sp);
+      }
+      var hex = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(hexPts), new THREE.LineBasicMaterial({ color: 0x9fb8e8, transparent: true, opacity: .3 }));
+      spinner.add(hex);
+      var circ = [];
+      for (var k = 0; k < 128; k++) { var a = k / 128 * Math.PI * 2; circ.push(new THREE.Vector3(Math.cos(a) * (R + .9), 0, Math.sin(a) * (R + .9))); }
+      spinner.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(circ), new THREE.LineBasicMaterial({ color: 0x9fb8e8, transparent: true, opacity: .1 })));
+
+      var dustN = 1100, dp = new Float32Array(dustN * 3);
+      for (var d = 0; d < dustN; d++) {
+        var rr = 9 + Math.random() * 22, u = Math.random() * 2 - 1, ph = Math.random() * Math.PI * 2, sq = Math.sqrt(1 - u * u);
+        dp[d * 3] = rr * sq * Math.cos(ph); dp[d * 3 + 1] = rr * u; dp[d * 3 + 2] = rr * sq * Math.sin(ph);
+      }
+      var dg = new THREE.BufferGeometry(); dg.setAttribute("position", new THREE.BufferAttribute(dp, 3));
+      var dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0x9fb8e8, size: .06, transparent: true, opacity: .55, depthWrite: false }));
+      scene.add(dust);
+
+      // HTML labels
+      var labels = VALUES.map(function (v, i) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "node-label"; b.textContent = v.name;
+        b.addEventListener("click", function () { go(valueSlide[i]); });
+        labelsEl.appendChild(b); return b;
+      });
+      var coreLabel = document.createElement("span");
+      coreLabel.className = "node-label core"; coreLabel.textContent = "Your work";
+      labelsEl.appendChild(coreLabel);
+
+      S = { ok: true, renderer: renderer, scene: scene, camera: camera, outer: outer, spinner: spinner, core: core, coreWire: coreWire, coreInner: coreInner, coreGlow: coreGlow, nodes: nodes, spokes: spokes, hex: hex, dust: dust, labels: labels, coreLabel: coreLabel, R: R, STEEL: STEEL, BRASS: BRASS, DIM: DIM };
+      resize();
+      addEventListener("resize", resize);
+      addEventListener("pointermove", function (e) { mouse.x = e.clientX / innerWidth - .5; mouse.y = e.clientY / innerHeight - .5; });
+      requestAnimationFrame(loop);
+    } catch (err) { canvas.style.display = "none"; S.ok = false; }
+  }
+
+  function narrow() { return innerWidth < 820; }
+  function resize() {
+    if (!S.ok) return;
+    S.renderer.setSize(innerWidth, innerHeight, false);
+    S.camera.aspect = innerWidth / innerHeight; S.camera.updateProjectionMatrix();
+    applyCanvas();
+  }
+  function applyCanvas() {
+    canvas.style.opacity = String(target.dim * (narrow() ? .45 : 1));
+  }
+
+  var last = performance.now(), t = 0, v3 = null;
+  function loop(now) {
+    var dt = Math.min(.05, (now - last) / 1000); last = now; t += dt;
+    var k = 1 - Math.exp(-dt * 2.6);
+    var nar = narrow();
+    cur.tilt += (target.tilt - cur.tilt) * k;
+    cur.offset += ((nar ? 0 : target.offset * 2.4) - cur.offset) * k;
+    cur.core += (target.core - cur.core) * k;
+    S.outer.rotation.x = cur.tilt;
+    S.outer.position.x = cur.offset;
+
+    if (target.focus >= 0) {
+      var want = S.nodes[target.focus].th - Math.PI / 2;
+      var diff = want - cur.phi;
+      diff = ((diff + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+      cur.phi += diff * k;
+    } else if (!reduced) {
+      cur.phi += dt * .14 * target.spin;
+    }
+    S.spinner.rotation.y = cur.phi;
+    S.core.rotation.y = -cur.phi * .6 + t * (reduced ? 0 : .2);
+    S.core.rotation.x = t * (reduced ? 0 : .11);
+    if (!reduced) S.dust.rotation.y = t * .01;
+
+    var pulse = reduced ? 1 : 1 + Math.sin(t * 2.2) * .06 * cur.core;
+    S.core.scale.setScalar((1 + cur.core * .18) * pulse);
+    S.coreWire.material.opacity = .4 + cur.core * .45;
+    S.coreGlow.material.opacity = .28 + cur.core * .35;
+
+    S.nodes.forEach(function (n, i) {
+      var isF = target.focus === i;
+      var tc = target.focus < 0 ? S.STEEL : (isF ? S.BRASS : S.DIM);
+      n.mesh.material.color.lerp(tc, k); n.glow.material.color.lerp(tc, k);
+      var ts = target.focus < 0 ? 1 : (isF ? 1.9 : .8);
+      n.s += (ts - n.s) * k;
+      n.g.scale.setScalar(n.s);
+      n.mesh.rotation.y += reduced ? 0 : dt * .8;
+      var jitter = !reduced && ((isF && i === 1) || target.glitch);
+      if (jitter && Math.random() < (target.glitch ? .12 : .2)) {
+        var amp = isF ? .18 : .1;
+        n.g.position.set(n.base.x + (Math.random() - .5) * amp, n.base.y + (Math.random() - .5) * amp, n.base.z + (Math.random() - .5) * amp);
+        n.glow.material.opacity = Math.random() * .9;
+      } else {
+        n.g.position.lerp(n.base, .25);
+        n.glow.material.opacity += ((isF ? .9 : .5) - n.glow.material.opacity) * k;
+      }
+      var so = target.focus < 0 ? .18 + cur.core * .5 : (isF ? .85 : .08);
+      S.spokes[i].material.opacity += (so - S.spokes[i].material.opacity) * k;
+      S.spokes[i].material.color.lerp(isF || cur.core > .5 ? S.BRASS : S.STEEL, k);
+    });
+    if (target.glitch && !reduced && Math.random() < .05) S.coreInner.material.opacity = Math.random() * .5;
+    else S.coreInner.material.opacity += (.28 - S.coreInner.material.opacity) * k;
+
+    S.camera.position.x += (mouse.x * .9 - S.camera.position.x) * k * .5;
+    S.camera.position.y += (.6 - mouse.y * .6 - S.camera.position.y) * k * .5;
+    S.camera.lookAt(0, 0, 0);
+    S.renderer.render(S.scene, S.camera);
+    placeLabels(nar);
+    requestAnimationFrame(loop);
+  }
+
+  function placeLabels(nar) {
+    if (!v3) v3 = new THREE.Vector3();
+    var show = target.labels && target.dim > .9 && !nar;
+    var w = innerWidth, h = innerHeight;
+    S.labels.forEach(function (el, i) {
+      if (!show) { el.style.visibility = "hidden"; return; }
+      S.nodes[i].g.getWorldPosition(v3);
+      var depth = Math.max(0, Math.min(1, (v3.z + S.R) / (2 * S.R)));
+      v3.y += .55;
+      v3.project(S.camera);
+      var x = (v3.x * .5 + .5) * w, y = (-v3.y * .5 + .5) * h;
+      el.style.visibility = "visible";
+      el.style.transform = "translate(" + x.toFixed(1) + "px," + y.toFixed(1) + "px) translate(-50%,-100%)";
+      el.style.opacity = (target.focus === i ? 1 : .35 + .65 * depth).toFixed(2);
+      el.style.zIndex = String(Math.round(depth * 10));
+      el.classList.toggle("on", target.focus === i);
+    });
+    if (show && target.focus < 0) {
+      S.core.getWorldPosition(v3); v3.y -= 1.45; v3.project(S.camera);
+      S.coreLabel.style.visibility = "visible";
+      S.coreLabel.style.transform = "translate(" + ((v3.x * .5 + .5) * w).toFixed(1) + "px," + ((-v3.y * .5 + .5) * h).toFixed(1) + "px) translate(-50%,0)";
+    } else S.coreLabel.style.visibility = "hidden";
+  }
+
+  var PRESETS = {
+    title: { tilt: 1.05, spin: 1, focus: -1, labels: true, dim: 1, core: 0, glitch: 0, offset: .85 },
+    ring: { tilt: .5, spin: .7, focus: -1, labels: true, dim: 1, core: 0, glitch: 0, offset: 1 },
+    overview: { tilt: .3, spin: .3, focus: -1, labels: true, dim: 1, core: 0, glitch: 0, offset: 1 },
+    core: { tilt: .55, spin: .45, focus: -1, labels: false, dim: .4, core: 1, glitch: 0, offset: 0 },
+    glitch: { tilt: .45, spin: .3, focus: -1, labels: false, dim: .45, core: 0, glitch: 1, offset: 0 },
+    dim: { tilt: .7, spin: .3, focus: -1, labels: false, dim: .3, core: 0, glitch: 0, offset: 0 }
+  };
+  function applyScene(name) {
+    var m = /^focus-(\d)$/.exec(name), p;
+    if (m) p = { tilt: .22, spin: 0, focus: +m[1], labels: true, dim: 1, core: 0, glitch: 0, offset: 1 };
+    else p = PRESETS[name] || PRESETS.ring;
+    for (var key in p) target[key] = p[key];
+    if (target.focus < 0) cur.phi = ((cur.phi % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    applyCanvas();
+  }
+
+  /* ---------- Navigation ---------- */
+  var pipsEl = document.getElementById("pips");
+  var pips = slides.map(function (s, i) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "pip"; b.setAttribute("aria-label", "Slide " + (i + 1) + ": " + s.dataset.section);
+    b.title = s.dataset.section; b.innerHTML = "<i></i>";
+    b.addEventListener("click", function () { go(i); });
+    pipsEl.appendChild(b); return b;
+  });
+  var notesEl = document.getElementById("notes"), notesText = document.getElementById("notesText");
+
+  function go(n) {
+    if (n == null || isNaN(n)) return;
+    n = Math.max(0, Math.min(slides.length - 1, n));
+    slides[idx].hidden = true;
+    idx = n;
+    var s = slides[idx];
+    s.hidden = false;
+    s.classList.remove("enter"); void s.offsetWidth; s.classList.add("enter");
+    s.scrollTop = 0;
+    pips.forEach(function (p, i) { p.classList.toggle("on", i === idx); p.classList.toggle("done", i < idx); });
+    document.getElementById("count").textContent = (idx + 1) + " / " + slides.length;
+    document.getElementById("sectionName").textContent = s.dataset.section;
+    notesText.textContent = s.dataset.notes || "";
+    applyScene(s.dataset.scene);
+    try { history.replaceState(null, "", "#s" + (idx + 1)); } catch (e) {}
+  }
+  document.getElementById("prev").addEventListener("click", function () { go(idx - 1); });
+  document.getElementById("next").addEventListener("click", function () { go(idx + 1); });
+  document.getElementById("notesBtn").addEventListener("click", toggleNotes);
+  document.getElementById("fsBtn").addEventListener("click", toggleFs);
+  function toggleNotes() { notesEl.hidden = !notesEl.hidden; }
+  function toggleFs() {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else { var r = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); if (r && r.catch) r.catch(function () {}); }
+    } catch (e) {}
+  }
+  document.addEventListener("keydown", function (e) {
+    var tg = e.target.tagName;
+    if (tg === "INPUT" || tg === "TEXTAREA") return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === "ArrowRight" || k === "PageDown" || (k === " " && tg !== "BUTTON")) { e.preventDefault(); go(idx + 1); }
+    else if (k === "ArrowLeft" || k === "PageUp") { e.preventDefault(); go(idx - 1); }
+    else if (k === "Home") go(0);
+    else if (k === "End") go(slides.length - 1);
+    else if (k === "n" || k === "N") toggleNotes();
+    else if (k === "f" || k === "F") toggleFs();
+    else if (k === "t" || k === "T") timerClick();
+  });
+  var sx = null;
+  document.getElementById("deck").addEventListener("touchstart", function (e) { sx = e.touches[0].clientX; }, { passive: true });
+  document.getElementById("deck").addEventListener("touchend", function (e) {
+    if (sx == null) return; var dx = e.changedTouches[0].clientX - sx; sx = null;
+    if (Math.abs(dx) > 70) go(idx + (dx < 0 ? 1 : -1));
+  });
+
+  /* ---------- Timer ---------- */
+  var timerBtn = document.getElementById("timer"), remain = 120, tid = null;
+  function fmt(s) { return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+  function timerClick() {
+    timerBtn.classList.remove("done");
+    if (tid) { clearInterval(tid); tid = null; remain = 120; timerBtn.textContent = fmt(remain); timerBtn.classList.remove("run"); return; }
+    remain = 120; timerBtn.classList.add("run");
+    tid = setInterval(function () {
+      remain--; timerBtn.textContent = fmt(remain);
+      if (remain <= 0) { clearInterval(tid); tid = null; timerBtn.classList.remove("run"); timerBtn.classList.add("done"); timerBtn.textContent = "Time"; remain = 120; }
+    }, 1000);
+  }
+  timerBtn.addEventListener("click", timerClick);
+
+  /* ---------- Tally ---------- */
+  var counts = [0, 0, 0];
+  var tbtns = Array.prototype.slice.call(document.querySelectorAll("#tally .tbtn"));
+  function drawTally() {
+    var tot = counts[0] + counts[1] + counts[2];
+    tbtns.forEach(function (b, i) {
+      b.querySelector(".n").textContent = counts[i];
+      b.querySelector(".bar i").style.width = (tot ? counts[i] / tot * 100 : 0) + "%";
+    });
+  }
+  tbtns.forEach(function (b, i) { b.addEventListener("click", function () { counts[i]++; drawTally(); }); });
+  document.getElementById("tallyReset").addEventListener("click", function () { counts = [0, 0, 0]; drawTally(); });
+
+  /* ---------- Value grid ---------- */
+  var vgrid = document.getElementById("vgrid");
+  VALUES.forEach(function (v, i) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "vbtn";
+    b.innerHTML = "<b>" + v.name + "</b><span>" + v.line + "</span>";
+    b.addEventListener("click", function () { go(valueSlide[i]); });
+    vgrid.appendChild(b);
+  });
+
+  /* ---------- Hallucination ---------- */
+  var SENT = [
+    { t: "The Central Limit Theorem describes how the distribution of sample means behaves as the sample size grows.", ok: true, why: "Accurate. This is what the theorem is about." },
+    { t: "Isaac Newton first proved it in 1687.", ok: false, why: "Invented history. Abraham de Moivre published an early version in 1733, and Laplace generalized it around 1810. Newton had no part in it." },
+    { t: "It applies to every population distribution, with no exceptions.", ok: false, why: "False. The classic theorem needs a finite variance. The Cauchy distribution is the standard counterexample: its sample means never settle into a normal shape." },
+    { t: "A sample size of about 30 is a common rule of thumb for the normal approximation to be reasonable.", ok: true, why: "Accurate, as a rule of thumb. Heavily skewed populations can need much more." },
+    { t: "Smith and Lee (2019), in the Journal of Statistical Certainty, showed that n = 10 is always enough.", ok: false, why: "Fabricated citation. The paper and the journal do not exist, and no fixed n is always enough. Fake references are among the most common GenAI failures." },
+    { t: "The theorem helps explain why the normal distribution shows up so often in statistics.", ok: true, why: "Accurate." }
+  ];
+  var hText = document.getElementById("hallucText"), hWrap = document.getElementById("halluc");
+  var hScore = document.getElementById("hallucScore"), hWhys = document.getElementById("hallucWhys");
+  var sentEls = SENT.map(function (s, i) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "sent " + (s.ok ? "istrue" : "isfalse"); b.textContent = s.t;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", function () {
+      if (hWrap.classList.contains("revealed")) return;
+      var on = b.classList.toggle("flag"); b.setAttribute("aria-pressed", String(on));
+    });
+    hText.appendChild(b);
+    if (i < SENT.length - 1) hText.appendChild(document.createTextNode(" "));
+    return b;
+  });
+  document.getElementById("hallucReveal").addEventListener("click", function () {
+    hWrap.classList.add("revealed");
+    var caught = 0, alarms = 0, totalF = 0;
+    hWhys.innerHTML = "";
+    SENT.forEach(function (s, i) {
+      var f = sentEls[i].classList.contains("flag");
+      if (!s.ok) { totalF++; if (f) caught++; } else if (f) alarms++;
+      if (!s.ok || f) {
+        var li = document.createElement("li");
+        if (!s.ok) li.className = "f";
+        li.textContent = s.why; hWhys.appendChild(li);
+      }
+    });
+    hScore.textContent = "Caught " + caught + " of " + totalF + " errors" + (alarms ? ", " + alarms + " false alarm" + (alarms > 1 ? "s" : "") : "") + ".";
+    hScore.hidden = false; hWhys.hidden = false;
+    document.getElementById("hallucHelp").textContent = "Every one of these sounds equally confident. That is the problem.";
+  });
+  document.getElementById("hallucReset").addEventListener("click", function () {
+    hWrap.classList.remove("revealed");
+    sentEls.forEach(function (b) { b.classList.remove("flag"); b.setAttribute("aria-pressed", "false"); });
+    hScore.hidden = true; hWhys.hidden = true;
+    document.getElementById("hallucHelp").textContent = "Click any sentence you would not trust. Then reveal.";
+  });
+
+  /* ---------- Scenarios ---------- */
+  var OPTS = ["Acceptable", "Acceptable if acknowledged", "Violation"];
+  var SC = [
+    { t: "You ask GenAI for possible essay angles. You pick one, research it in the library and write every sentence yourself.", a: 1, v: "Honesty", why: "Legitimate brainstorming. Honesty still means saying GenAI helped generate the ideas." },
+    { t: "You paste the assignment prompt into a chatbot and submit its answer under your name.", a: 2, v: "Honesty · Respect", why: "Unauthorised content generation. It skips the learning the assignment exists for and misrepresents who wrote it." },
+    { t: "You have GenAI turn your own lecture notes into flashcards for private study. Nothing gets submitted.", a: 0, v: "Trust", why: "A study aid that enhances learning. Check each card, because GenAI can garble even your own notes." },
+    { t: "GenAI gives you a reference list. You paste it into your paper without opening a single source.", a: 2, v: "Trust · Responsibility", why: "Some of those references may not exist. You are responsible for every citation under your name." },
+    { t: "You write the full draft yourself, then use GenAI to fix grammar and tighten sentences.", a: 1, v: "Honesty · Fairness", why: "Your ideas, your argument. Name the tool. Some writing courses ban this, because the writing itself is the skill being assessed." },
+    { t: "Your exam allows no aids. You check one answer with a chatbot on your phone.", a: 2, v: "Fairness · Courage", why: "Classmates followed the stated rule. Breaking it gives you an advantage they chose not to take." }
+  ];
+  var scWrap = document.getElementById("scards");
+  var scCards = SC.map(function (s) {
+    var card = document.createElement("div"); card.className = "scard";
+    var p = document.createElement("p"); p.textContent = s.t; card.appendChild(p);
+    var ch = document.createElement("div"); ch.className = "choices";
+    var verdict = document.createElement("div"); verdict.className = "verdict"; verdict.hidden = true;
+    verdict.innerHTML = "<b></b><span></span>";
+    var btns = OPTS.map(function (o, oi) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "choice"; b.textContent = o;
+      b.addEventListener("click", function () {
+        btns.forEach(function (x) { x.classList.remove("right", "wrong"); });
+        btns[s.a].classList.add("right");
+        if (oi !== s.a) b.classList.add("wrong");
+        verdict.querySelector("b").textContent = OPTS[s.a] + " · " + s.v;
+        verdict.querySelector("span").textContent = s.why;
+        verdict.hidden = false;
+      });
+      ch.appendChild(b); return b;
+    });
+    card.appendChild(ch); card.appendChild(verdict); scWrap.appendChild(card);
+    return { btns: btns, verdict: verdict };
+  });
+  document.getElementById("scReset").addEventListener("click", function () {
+    scCards.forEach(function (c) { c.verdict.hidden = true; c.btns.forEach(function (b) { b.classList.remove("right", "wrong"); }); });
+  });
+
+  /* ---------- Acknowledgment builder ---------- */
+  var ids = ["ackSystem", "ackUse", "ackPrompts", "ackOutput"];
+  var fields = ids.map(function (id) { return document.getElementById(id); });
+  var ackOut = document.getElementById("ackOut"), ackMsg = document.getElementById("ackMsg");
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function val(i, ph) { var v = fields[i].value.trim(); return v ? v : "[" + ph + "]"; }
+  function plain() {
+    return "I acknowledge the use of " + val(0, "GenAI system and link") + " to " + val(1, "specific use") + ". " +
+      "The prompts used include " + val(2, "list of prompts") + ". " +
+      "The output from these prompts was used to " + val(3, "explain use") + ".";
+  }
+  function drawAck() {
+    ackOut.innerHTML = "I acknowledge the use of <mark>" + esc(val(0, "GenAI system and link")) + "</mark> to <mark>" + esc(val(1, "specific use")) +
+      "</mark>. The prompts used include <mark>" + esc(val(2, "list of prompts")) + "</mark>. The output from these prompts was used to <mark>" + esc(val(3, "explain use")) + "</mark>.";
+  }
+  fields.forEach(function (f) { f.addEventListener("input", drawAck); });
+  document.getElementById("ackForm").addEventListener("submit", function (e) { e.preventDefault(); });
+  document.getElementById("ackClear").addEventListener("click", function () { fields.forEach(function (f) { f.value = ""; }); drawAck(); fields[0].focus(); });
+  document.getElementById("ackCopy").addEventListener("click", function () {
+    var text = plain();
+    function fallback() {
+      var r = document.createRange(); r.selectNodeContents(ackOut);
+      var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      ackMsg.textContent = "Selected. Press Ctrl+C to copy.";
+    }
+    try {
+      navigator.clipboard.writeText(text).then(function () { ackMsg.textContent = "Copied."; }, fallback);
+    } catch (e) { fallback(); }
+  });
+  drawAck();
+
+  /* ---------- Start ---------- */
+  initScene();
+  var start = 0;
+  var hm = /^#s(\d+)$/.exec(location.hash || "");
+  if (hm) start = (+hm[1]) - 1;
+  slides[0].hidden = true; idx = 0;
+  go(start);
+})();
+</script>
+
+</body>
+</html>
